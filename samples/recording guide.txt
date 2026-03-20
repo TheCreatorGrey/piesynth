@@ -1,0 +1,53 @@
+Examples are American pronunciation
+Recordings in F
+
+samples needed:
+
+Vowels:
+a0 (w[a]ter) [covered]
+a1 (m[a]th) [covered]
+e0 (w[e]ld) [covered]
+i0 (wh[ee]l) [covered]
+i1 (m[i]lk) [covered]
+o0 (b[o]wl) [covered]
+u0 ([u]se) [covered]
+u1 (b[u]n) [covered]
+u2 ([w]all) [covered]
+
+Vocal non-vowel sounds:
+l [covered]
+m [covered]
+n [covered]
+r [covered]
+t [covered]
+
+Fricitaves and plosives:
+b [covered]
+c / k [covered]
+d [covered]
+f [covered]
+g [covered]
+j / zh [gara[ge]]
+p [covered]
+s [covered]
+v [covered]
+z [covered]
+
+Other:
+h [covered]
+th [covered]
+
+
+Words which cover all needed sounds (record these in a monotone voice at default pitch, which is F):
+water
+math
+cold
+stale
+garage
+fin
+peel
+held
+bear
+oven
+boss
+use
