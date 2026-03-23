@@ -1,5 +1,5 @@
 
-import wave, sys, math, time
+import wave, sys, math, time, json
 
 import pyaudio
 
@@ -17,16 +17,15 @@ class PieSynth():
         self.sample_rate = 16000 #wf.getframerate()
         self.default_freq = self.noteToFrequency(57) # Recordings are in F
 
-        self.vocal_samples = ["a0", "a1", "e0", "i0", "i1", "o0", "s", "l", "r", "n", "b", "k", "p", "f", "t", "z", "v", "m", "f", "h"]
+        self.vocal_samples = ["a0", "a1", "e0", "i0", "i1", "o0", "u0", "s", "l", "r", "n", "b", "k", "p", "f", "t", "d", "z", "v", "m", "f", "h", "zh", "g", "th", "sh"]
         self.vocal_sample_data = []
-
         
         self.do_not_repeat = []
-        for s in ["b", "k", "p", "f", "t"]:
+        for s in ["b", "k", "p", "f", "t", "d", "g"]:
             self.do_not_repeat.append(self.vocal_samples.index(s))
 
         self.do_not_pitch = []
-        for s in ["s", "b", "k", "p", "f", "t", "f", "h"]:
+        for s in ["s", "b", "k", "p", "f", "t", "f", "h", "d", "g", "th", "sh"]:
             self.do_not_pitch.append(self.vocal_samples.index(s))
 
         # Import vocal sounds and load them into vocal_sample_data
@@ -53,6 +52,9 @@ class PieSynth():
                         output=True)
 
 
+        self.pronunciation_table = {}
+
+
     # MIDI note number to frequency
     def noteToFrequency(self, midi_number):
         # Formula from wikipedia https://en.wikipedia.org/wiki/Piano_key_frequencies
@@ -62,30 +64,59 @@ class PieSynth():
         return (self.noteToFrequency(midi_number) / self.default_freq)
 
 
-    def textToSequence(self, text, pitch=60):
-        frames_per_sound = 20
+    # Loads a pronunciation set from a JSON file
+    def loadPronunciation(self, location):
+        with open(location, "r") as file:
+            pset = json.loads(file.read())
 
-        replace = {
-            "a":"a0",
-            "u":"a1",
-            "o":"o0",
-            "i":"i0",
-            "e":"e0"
-        }
+            for word in pset:
+                self.pronunciation_table[word] = pset[word]
 
-        words = text.split()
-        for word in words:
-            sequence = []
-            for l in word:
-                sound = l
+    # Gets word pronunciation from loaded pronunciation set(s) or guesses pronunciation
+    def getPronunciation(self, word):
+        if word in self.pronunciation_table:
+            return self.pronunciation_table[word]
+        else:
+            # Otherwise guess
+
+            pronunciation = []
+
+            replace = {
+                "a":"a0",
+                "u":"u0",
+                "o":"o0",
+                "i":"i1",
+                "e":"e0",
+                "y":"i0"
+            }
+
+            for letter in word:
+                sound = letter
 
                 if (sound in replace):
                     sound = replace[sound]
 
-                sequence.append([self.vocal_samples.index(sound), frames_per_sound, pitch])
+                pronunciation.append(sound)
+
+            return pronunciation
+
+    # Converts a sentence to a vocal sequence and plays it
+    def speak(self, text, speed=20, pitch=60, word_delay=.06):
+        modified = text
+
+        modified = text.replace(".", "  ")
+        modified = modified.replace("!", "  ")
+        modified = modified.replace("?", "  ")
+
+        words = modified.split()
+        for word in words:
+            pronunciation = self.getPronunciation(word)
+            sequence = []
+            for sound in pronunciation:
+                sequence.append([self.vocal_samples.index(sound), speed, pitch])
             
             self.play(sequence)
-            time.sleep(.1)
+            time.sleep(word_delay)
 
 
     def play(self, sequence):
@@ -138,6 +169,10 @@ class PieSynth():
 
 if __name__ == "__main__":
     ps = PieSynth()
-    #ps.play(queue)
-    ps.textToSequence("haha hello")
+
+    ps.loadPronunciation("pronunciation sets/enus_basic.json")
+    ps.loadPronunciation("pronunciation sets/enus_internet.json")
+
+    ps.speak("hello everyone on linkedin and or youtube. i have something to show you")
+
     ps.close()
