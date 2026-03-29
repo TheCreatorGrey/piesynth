@@ -1,14 +1,5 @@
 
-import wave, sys, math, time, json
-
-import pyaudio
-
-
-
-# Vocalizations to be played. First number is index of sound, second is duration in frames.
-# Third is how many frames are skipped. Changes the pitch. 1 is same pitch as recording
-queue = []
-
+import pyaudio, wave, sys, math, time, json, re, sys
 
 
 
@@ -17,11 +8,11 @@ class PieSynth():
         self.sample_rate = 16000 #wf.getframerate()
         self.default_freq = self.noteToFrequency(57) # Recordings are in F
 
-        self.vocal_samples = ["a0", "a1", "e0", "i0", "i1", "o0", "u0", "s", "l", "r", "n", "b", "k", "p", "f", "t", "d", "z", "v", "m", "f", "h", "zh", "g", "th", "sh"]
+        self.vocal_samples = ["aw", "ah", "ee", "eh", "ih", "ou", "oo", "uh", "s", "l", "r", "n", "b", "k", "p", "f", "t", "d", "z", "v", "m", "f", "h", "zh", "g", "th", "sh"]
         self.vocal_sample_data = []
         
         self.do_not_repeat = []
-        for s in ["b", "k", "p", "f", "t", "d", "g"]:
+        for s in ["b", "k", "p", "t", "d", "g"]:
             self.do_not_repeat.append(self.vocal_samples.index(s))
 
         self.do_not_pitch = []
@@ -82,41 +73,61 @@ class PieSynth():
             pronunciation = []
 
             replace = {
-                "a":"a0",
-                "u":"u0",
-                "o":"o0",
-                "i":"i1",
-                "e":"e0",
-                "y":"i0"
+                "a":"aw",
+                "u":"uh",
+                "o":"ou",
+                "i":"ih",
+                "e":"eh",
+                "y":"ee",
+                "c":"k",
+                "w":"oo",
+                "x":"k,s",
+
+                "0":"z,ee,r,uh,oo",
+                "1":"oo,uh,n",
+                "2":"t,oo",
+                "3":"th,r,ee",
+                "4":"f,ou,r",
+                "5":"f,aw,ee,v",
+                "6":"s,ih,k,s",
+                "7":"s,eh,v,ih,n",
+                "8":"eh,ee,t",
+                "9":"n,aw,ee,n"
             }
 
-            for letter in word:
-                sound = letter
+            for char in word:
 
-                if (sound in replace):
-                    sound = replace[sound]
-
-                pronunciation.append(sound)
+                if (char in replace):
+                    sound = replace[char]
+                    for sound in replace[char].split(","):
+                        pronunciation.append(sound) 
+                else:
+                    pronunciation.append(char)
 
             return pronunciation
 
     # Converts a sentence to a vocal sequence and plays it
-    def speak(self, text, speed=20, pitch=60, word_delay=.06):
-        modified = text
+    def speak(self, text, speed=20, pitch=57, word_delay=.06, sentence_delay=.2):
 
-        modified = text.replace(".", "  ")
-        modified = modified.replace("!", "  ")
-        modified = modified.replace("?", "  ")
+        cleaned = re.sub("[-_()/:]", " ", text.lower()) # Symbols to replace with spaces or small delays
+        #cleaned = re.sub("[]", "", cleaned) # Symbols to ignore entirely
+        sentences = re.split("[.!?,]", cleaned)
+        for sentence in sentences:
+            words = sentence.split()
+            for word in words:
+                pronunciation = self.getPronunciation(word)
+                sequence = []
+                for sound in pronunciation:
+                    sequence.append([self.vocal_samples.index(sound), speed, pitch])
+                
+                self.play(sequence)
+                time.sleep(word_delay)
 
-        words = modified.split()
-        for word in words:
-            pronunciation = self.getPronunciation(word)
-            sequence = []
-            for sound in pronunciation:
-                sequence.append([self.vocal_samples.index(sound), speed, pitch])
-            
-            self.play(sequence)
-            time.sleep(word_delay)
+            time.sleep(sentence_delay)
+
+    def speakFromFile(self, location):
+        with open(location, "r") as file:
+            self.speak(file.read())
 
 
     def play(self, sequence):
@@ -170,9 +181,13 @@ class PieSynth():
 if __name__ == "__main__":
     ps = PieSynth()
 
-    ps.loadPronunciation("pronunciation sets/enus_basic.json")
-    ps.loadPronunciation("pronunciation sets/enus_internet.json")
+    #ps.loadPronunciation("pronunciation sets/enus_basic.json")
+    #ps.loadPronunciation("pronunciation sets/enus_internet.json")
+    ps.loadPronunciation("pronunciation sets/cmu_dict.json")
 
-    ps.speak("hello everyone on linkedin and or youtube. i have something to show you")
+    if 1 < len(sys.argv):
+        ps.speak(sys.argv[1])
+    else:
+        ps.speak("Welcome to Pie Synth. This is a basic speech synthesizer which uses pre-recorded samples of my voice to create speech.")
 
     ps.close()

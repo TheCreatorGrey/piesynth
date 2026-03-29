@@ -21,7 +21,7 @@
     "hello":["h", "e0", "l", "o0", "u0"],
     "everyone":["e0", "v", "r", "i0", "u0", "a1", "n"],
 
-    "show":["sh", "a1", "u0"],
+    "show":["sh", "o0", "u0"],
 
     "something":["s", "a1", "m", "th", "i0", "n"],
     "garage":["g", "r", "a0", "zh"]
